@@ -1,1 +1,223 @@
-<!DOCTYPE html> <html lang="en"> <head> <meta charset="UTF-8" /> <title>NeuroICU Secret Santa</title> <meta name="viewport" content="width=device-width, initial-scale=1" /> <style> body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: radial-gradient(circle at top, #1b2b3a, #050610 60%); color: #f5f5f5; margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; } .card { background: rgba(0,0,0,0.55); border-radius: 16px; box-shadow: 0 0 25px rgba(0,0,0,0.7); padding: 24px 28px 28px; max-width: 540px; width: 90%; } h1 { text-align: center; margin-top: 0; font-size: 1.8rem; letter-spacing: 0.06em; text-transform: uppercase; color: #f0e68c; } h2 { font-size: 1.1rem; margin-top: 1.2rem; color: #ffe4b5; } p { line-height: 1.4; margin: 0.3rem 0; } ul { margin: 0.4rem 0 0.6rem 1.2rem; padding: 0; } li { margin-bottom: 0.25rem; } .input-row { display: flex; gap: 0.5rem; margin-top: 1rem; } input[type="text"] { flex: 1; padding: 0.45rem 0.6rem; border-radius: 999px; border: 1px solid #555; background: rgba(10,10,20,0.8); color: #f5f5f5; outline: none; } input[type="text"]::placeholder { color: #999; } button { padding: 0.45rem 0.9rem; border-radius: 999px; border: none; background: linear-gradient(135deg, #1db954, #0a8f3b); color: #fff; font-weight: 600; cursor: pointer; white-space: nowrap; } button:hover { background: linear-gradient(135deg, #22d15f, #0da348); } .result { margin-top: 1rem; padding-top: 0.8rem; border-top: 1px solid rgba(255,255,255,0.12); } .error { color: #ffb6b6; margin-top: 0.5rem; } .small-note { font-size: 0.82rem; opacity: 0.8; } .music-toggle { margin-top: 0.75rem; font-size: 0.85rem; text-align: right; cursor: pointer; color: #9fe6ff; } .budget-highlight { background: rgba(255, 215, 0, 0.1); padding: 0.5rem; border-left: 3px solid #ffd700; margin: 0.5rem 0; border-radius: 4px; } </style> </head> <body> <div class="card"> <h1>NeuroICU Secret Santa</h1> <h2>How it works</h2> <p>Welcome to the NeuroICU Secret Santa experiment.</p> <ul> <li>Each player has a unique access code. Keep it secret.</li> <li>Enter your code below to reveal your Secret Santa codename and your three giftees.</li> <li>Bring three gifts total, one for each of these colleagues.</li> <li>All gifts will be left in the NeuroICU work room to be picked up.</li> </ul> <div class="budget-highlight"> <strong>💰 Budget: $20 per gift (max)</strong> </div> <h2>Investigation rules</h2> <ul> <li>With each gift, label it with your Secret Santa codename and the giftee's real name.</li> <li>Include one clue pointing toward your real identity.</li> <li>Players must compare clues with others who received gifts from the same codename Santa.</li> <li>Use the combined clues to deduce who your Secret Santa really is.</li> </ul> <div class="input-row"> <input id="codeInput" type="text" maxlength="6" placeholder="Enter your secret code" /> <button type="button" onclick="q()">Reveal</button> </div> <div id="error" class="error"></div> <div class="result" id="result" style="display:none;"></div> <div class="music-toggle" onclick="toggleMusic()"> 🔊 Toggle mysterious Christmas music </div> <p class="small-note"> For the best effect, wear your most festive scrubs while investigating. </p> </div> <audio id="bgMusic" loop></audio> <script> const musicSource = "https://archive.org/download/LostFrontierChristmasSampler2012/VV.AA.%20-%202012%20-%20lost%20frontier%20Christmas%20sampler%202012%20-%2001%20-%20Psicodreamics%20-%20Children%20of%20the%20Cold.mp3"; const bgMusic = document.getElementById("bgMusic"); bgMusic.src = musicSource; bgMusic.volume = 0.15; // Low volume (15%) bgMusic.play().catch(err => console.log("Autoplay blocked:", err)); // Encoded player data (base64) - not easily readable without decoding const a="eyJYQUpJIjogeyJuYW1lIjogIkV5YWQiLCAiY29kZW5hbWUiOiAiRnJvc3R5IE5ldXJvbiIsICJnaWZ0ZWVzIjogWyJDaWVubmEiLCAiTGF1cmVuIiwgIlNhcmFoIl19LCAiMFk2RCI6IHsibmFtZSI6ICJUaWEiLCAiY29kZW5hbWUiOiAiU2lsZW50IFN5bmFwc2UiLCAiZ2lmdGVlcyI6IFsiSmFlaGFuIiwgIkVyaWNhIiwgIkV5YWQiXX0sICJQQkhTIjogeyJuYW1lIjogIkJsYWtlIiwgImNvZGVuYW1lIjogIkFyY3RpYyBBeG9uIiwgImdpZnRlZXMiOiBbIkRhbmllbGxlIiwgIkNhaXRsaW4iLCAiQnJpZGdldCJdfSwgIkFIWFQiOiB7Im5hbWUiOiAiSmFlaGFuIiwgImNvZGVuYW1lIjogIk1pZG5pZ2h0IE15ZWxpbiIsICJnaWZ0ZWVzIjogWyJMYXVyZW4iLCAiQnJpZGdldCIsICJEYWxsYXMiXX0sICJIVjNBIjogeyJuYW1lIjogIkNhaXRsaW4iLCAiY29kZW5hbWUiOiAiUG9sYXIgUG90ZW50aWFsIiwgImdpZnRlZXMiOiBbIlRpYSIsICJCZXRoIiwgIkJsYWtlIl19LCAiM1pNRiI6IHsibmFtZSI6ICJLYWl0bGVuIiwgImNvZGVuYW1lIjogIkNyYW5pYWwgQ29tZXQiLCAiZ2lmdGVlcyI6IFsiRXlhZCIsICJUaWEiLCAiQWxleGlzIl19LCAiOE1ERCI6IHsibmFtZSI6ICJTYXJhaCIsICJjb2RlbmFtZSI6ICJGZXN0aXZlIEZpc3N1cmUiLCAiZ2lmdGVlcyI6IFsiQ2FpdGxpbiIsICJLYWl0bGVuIiwgIkJldGgiXX0sICI0VjMwIjogeyJuYW1lIjogIkNpZW5uYSIsICJjb2RlbmFtZSI6ICJTbm93eSBTdWxjdXMiLCAiZ2lmdGVlcyI6IFsiRGFsbGFzIiwgIkVyaWNhIiwgIkthaXRsZW4iXX0sICJUOU5UIjogeyJuYW1lIjogIkJyaWRnZXQiLCAiY29kZW5hbWUiOiAiSG9sbHkgSHlwb3RoYWxhbXVzIiwgImdpZnRlZXMiOiBbIkthaXRsZW4iLCAiSmFlaGFuIiwgIkV5YWQiXX0sICIzVzVVIjogeyJuYW1lIjogIkRhbGxhcyIsICJjb2RlbmFtZSI6ICJZdWxldGlkZSBZLXRyYWN0IiwgImdpZnRlZXMiOiBbIkFsZXhpcyIsICJCZXRoIiwgIlNhcmFoIl19LCAiWkJJSyI6IHsibmFtZSI6ICJEYW5pZWxsZSIsICJjb2RlbmFtZSI6ICJOb3J0aCBQb2xlIE51Y2xldXMiLCAiZ2lmdGVlcyI6IFsiRXJpY2EiLCAiVGlhIiwgIkJsYWtlIl19LCAiQ0lESyI6IHsibmFtZSI6ICJCZXRoIiwgImNvZGVuYW1lIjogIlNvbHN0aWNlIFNvbWEiLCAiZ2lmdGVlcyI6IFsiSmFlaGFuIiwgIkNpZW5uYSIsICJMYXVyZW4iXX0sICJXTk5IIjogeyJuYW1lIjogIkVyaWNhIiwgImNvZGVuYW1lIjogIkdsYWNpYWwgR2FuZ2xpb24iLCAiZ2lmdGVlcyI6IFsiRGFuaWVsbGUiLCAiQWxleGlzIiwgIkNhaXRsaW4iXX0sICJKN1hWIjogeyJuYW1lIjogIkxhdXJlbiIsICJjb2RlbmFtZSI6ICJUaW5zZWwgVHJhY3QiLCAiZ2lmdGVlcyI6IFsiQnJpZGdldCIsICJDaWVubmEiLCAiRGFuaWVsbGUiXX0sICJHMEZOIjogeyJuYW1lIjogIkFsZXhpcyIsICJjb2RlbmFtZSI6ICJDYXJvbGluZyBDb3JwdXMgQ2FsbG9zdW0iLCAiZ2lmdGVlcyI6IFsiRGFsbGFzIiwgIlNhcmFoIiwgIkJsYWtlIl19fQ=="; // Decode the data at runtime const b = JSON.parse(atob(a)); function q() { const c = document.getElementById("codeInput"); const d = c.value.trim().toUpperCase(); const e = document.getElementById("error"); const f = document.getElementById("result"); e.textContent = ""; f.style.display = "none"; f.innerHTML = ""; if (!d) { e.textContent = "Please enter your secret code."; return; } const g = b[d]; if (!g) { e.textContent = "That code is not recognized. Check your code and try again."; return; } const h = g.name; const i = g.codename; const j = g.giftees; const k = ` <h2>Your assignment</h2> <p>Hello, ${h}. Your Secret Santa codename is:</p> <p><strong style="font-size: 1.2rem; color: #ffd700;">${i}</strong></p> <p>You must prepare <strong>3 gifts</strong> in total, one for each of these colleagues:</p> <ul> ${j.map(l => `<li>${l}</li>`).join("")} </ul> <div class="budget-highlight"> <strong>Budget: $20 per gift (max)</strong> </div> <p><strong>For each gift, you must:</strong></p> <ul> <li>Keep the cost to $20 or less per gift.</li> <li>Label the gift with your codename and the giftee's real name.</li> <li>Include one clue pointing toward your real identity.</li> </ul> <p>All gifts should be left in the NeuroICU work room to be picked up.</p> <p>To unmask the Santas, compare clues with anyone else who received gifts from <em>${i}</em> and use your best detective skills.</p> `; f.innerHTML = k; f.style.display = "block"; } function toggleMusic() { if (bgMusic.paused) { bgMusic.play(); } else { bgMusic.pause(); } } </script> </body> </html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>NeuroICU Secret Santa</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #1b2b3a, #050610 60%);
+      color: #f5f5f5;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      background: rgba(0,0,0,0.55);
+      border-radius: 16px;
+      box-shadow: 0 0 25px rgba(0,0,0,0.7);
+      padding: 24px 28px 28px;
+      max-width: 540px;
+      width: 90%;
+    }
+    h1 {
+      text-align: center;
+      margin-top: 0;
+      font-size: 1.8rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #f0e68c;
+    }
+    h2 {
+      font-size: 1.1rem;
+      margin-top: 1.2rem;
+      color: #ffe4b5;
+    }
+    p {
+      line-height: 1.4;
+      margin: 0.3rem 0;
+    }
+    ul {
+      margin: 0.4rem 0 0.6rem 1.2rem;
+      padding: 0;
+    }
+    li {
+      margin-bottom: 0.25rem;
+    }
+    .input-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+    input[type="text"] {
+      flex: 1;
+      padding: 0.45rem 0.6rem;
+      border-radius: 999px;
+      border: 1px solid #555;
+      background: rgba(10,10,20,0.8);
+      color: #f5f5f5;
+      outline: none;
+    }
+    input[type="text"]::placeholder {
+      color: #999;
+    }
+    button {
+      padding: 0.45rem 0.9rem;
+      border-radius: 999px;
+      border: none;
+      background: linear-gradient(135deg, #1db954, #0a8f3b);
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    button:hover {
+      background: linear-gradient(135deg, #22d15f, #0da348);
+    }
+    .result {
+      margin-top: 1rem;
+      padding-top: 0.8rem;
+      border-top: 1px solid rgba(255,255,255,0.12);
+    }
+    .error {
+      color: #ffb6b6;
+      margin-top: 0.5rem;
+    }
+    .small-note {
+      font-size: 0.82rem;
+      opacity: 0.8;
+    }
+    .music-toggle {
+      margin-top: 0.75rem;
+      font-size: 0.85rem;
+      text-align: right;
+      cursor: pointer;
+      color: #9fe6ff;
+    }
+    .budget-highlight {
+      background: rgba(255, 215, 0, 0.1);
+      padding: 0.5rem;
+      border-left: 3px solid #ffd700;
+      margin: 0.5rem 0;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>NeuroICU Secret Santa</h1>
+ 
+    <h2>How it works</h2>
+    <p>Welcome to the NeuroICU Secret Santa experiment.</p>
+    <ul>
+      <li>Each player has a unique access code. Keep it secret.</li>
+      <li>Enter your code below to reveal your Secret Santa codename and your three giftees.</li>
+      <li>Bring three gifts total, one for each of these colleagues.</li>
+      <li>All gifts will be left in the NeuroICU work room to be picked up.</li>
+    </ul>
+ 
+    <div class="budget-highlight">
+      <strong>💰 Budget: $20 per gift (max)</strong>
+    </div>
+ 
+    <h2>Investigation rules</h2>
+    <ul>
+      <li>With each gift, label it with your Secret Santa codename and the giftee's real name.</li>
+      <li>Include one clue pointing toward your real identity.</li>
+      <li>Players must compare clues with others who received gifts from the same codename Santa.</li>
+      <li>Use the combined clues to deduce who your Secret Santa really is.</li>
+    </ul>
+ 
+    <div class="input-row">
+      <input id="codeInput" type="text" maxlength="6" placeholder="Enter your secret code" />
+      <button type="button" onclick="q()">Reveal</button>
+    </div>
+    <div id="error" class="error"></div>
+ 
+    <div class="result" id="result" style="display:none;"></div>
+ 
+    <div class="music-toggle" onclick="toggleMusic()">
+      🔊 Toggle mysterious Christmas music
+    </div>
+    <p class="small-note">
+      For the best effect, wear your most festive scrubs while investigating.
+    </p>
+  </div>
+ 
+  <audio id="bgMusic" loop></audio>
+ 
+  <script>
+    const musicSource = "https://archive.org/download/LostFrontierChristmasSampler2012/VV.AA.%20-%202012%20-%20lost%20frontier%20Christmas%20sampler%202012%20-%2001%20-%20Psicodreamics%20-%20Children%20of%20the%20Cold.mp3";
+    const bgMusic = document.getElementById("bgMusic");
+    bgMusic.src = musicSource;
+    bgMusic.volume = 0.15; // Low volume (15%)
+    bgMusic.play().catch(err => console.log("Autoplay blocked:", err));
+    
+    // Encoded player data (base64) - not easily readable without decoding
+    const a="eyJYQUpJIjogeyJuYW1lIjogIkV5YWQiLCAiY29kZW5hbWUiOiAiRnJvc3R5IE5ldXJvbiIsICJnaWZ0ZWVzIjogWyJDaWVubmEiLCAiTGF1cmVuIiwgIlNhcmFoIl19LCAiMFk2RCI6IHsibmFtZSI6ICJUaWEiLCAiY29kZW5hbWUiOiAiU2lsZW50IFN5bmFwc2UiLCAiZ2lmdGVlcyI6IFsiSmFlaGFuIiwgIkVyaWNhIiwgIkV5YWQiXX0sICJQQkhTIjogeyJuYW1lIjogIkJsYWtlIiwgImNvZGVuYW1lIjogIkFyY3RpYyBBeG9uIiwgImdpZnRlZXMiOiBbIkRhbmllbGxlIiwgIkNhaXRsaW4iLCAiQnJpZGdldCJdfSwgIkFIWFQiOiB7Im5hbWUiOiAiSmFlaGFuIiwgImNvZGVuYW1lIjogIk1pZG5pZ2h0IE15ZWxpbiIsICJnaWZ0ZWVzIjogWyJMYXVyZW4iLCAiQnJpZGdldCIsICJEYWxsYXMiXX0sICJIVjNBIjogeyJuYW1lIjogIkNhaXRsaW4iLCAiY29kZW5hbWUiOiAiUG9sYXIgUG90ZW50aWFsIiwgImdpZnRlZXMiOiBbIlRpYSIsICJCZXRoIiwgIkJsYWtlIl19LCAiM1pNRiI6IHsibmFtZSI6ICJLYWl0bGVuIiwgImNvZGVuYW1lIjogIkNyYW5pYWwgQ29tZXQiLCAiZ2lmdGVlcyI6IFsiRXlhZCIsICJUaWEiLCAiQWxleGlzIl19LCAiOE1ERCI6IHsibmFtZSI6ICJTYXJhaCIsICJjb2RlbmFtZSI6ICJGZXN0aXZlIEZpc3N1cmUiLCAiZ2lmdGVlcyI6IFsiQ2FpdGxpbiIsICJLYWl0bGVuIiwgIkJldGgiXX0sICI0VjMwIjogeyJuYW1lIjogIkNpZW5uYSIsICJjb2RlbmFtZSI6ICJTbm93eSBTdWxjdXMiLCAiZ2lmdGVlcyI6IFsiRGFsbGFzIiwgIkVyaWNhIiwgIkthaXRsZW4iXX0sICJUOU5UIjogeyJuYW1lIjogIkJyaWRnZXQiLCAiY29kZW5hbWUiOiAiSG9sbHkgSHlwb3RoYWxhbXVzIiwgImdpZnRlZXMiOiBbIkthaXRsZW4iLCAiSmFlaGFuIiwgIkV5YWQiXX0sICIzVzVVIjogeyJuYW1lIjogIkRhbGxhcyIsICJjb2RlbmFtZSI6ICJZdWxldGlkZSBZLXRyYWN0IiwgImdpZnRlZXMiOiBbIkFsZXhpcyIsICJCZXRoIiwgIlNhcmFoIl19LCAiWkJJSyI6IHsibmFtZSI6ICJEYW5pZWxsZSIsICJjb2RlbmFtZSI6ICJOb3J0aCBQb2xlIE51Y2xldXMiLCAiZ2lmdGVlcyI6IFsiRXJpY2EiLCAiVGlhIiwgIkJsYWtlIl19LCAiQ0lESyI6IHsibmFtZSI6ICJCZXRoIiwgImNvZGVuYW1lIjogIlNvbHN0aWNlIFNvbWEiLCAiZ2lmdGVlcyI6IFsiSmFlaGFuIiwgIkNpZW5uYSIsICJMYXVyZW4iXX0sICJXTk5IIjogeyJuYW1lIjogIkVyaWNhIiwgImNvZGVuYW1lIjogIkdsYWNpYWwgR2FuZ2xpb24iLCAiZ2lmdGVlcyI6IFsiRGFuaWVsbGUiLCAiQWxleGlzIiwgIkNhaXRsaW4iXX0sICJKN1hWIjogeyJuYW1lIjogIkxhdXJlbiIsICJjb2RlbmFtZSI6ICJUaW5zZWwgVHJhY3QiLCAiZ2lmdGVlcyI6IFsiQnJpZGdldCIsICJDaWVubmEiLCAiRGFuaWVsbGUiXX0sICJHMEZOIjogeyJuYW1lIjogIkFsZXhpcyIsICJjb2RlbmFtZSI6ICJDYXJvbGluZyBDb3JwdXMgQ2FsbG9zdW0iLCAiZ2lmdGVlcyI6IFsiRGFsbGFzIiwgIlNhcmFoIiwgIkJsYWtlIl19fQ==";
+    
+    // Decode the data at runtime
+    const b = JSON.parse(atob(a));
+    
+    function q() {
+      const c = document.getElementById("codeInput");
+      const d = c.value.trim().toUpperCase();
+      const e = document.getElementById("error");
+      const f = document.getElementById("result");
+      e.textContent = "";
+      f.style.display = "none";
+      f.innerHTML = "";
+ 
+      if (!d) {
+        e.textContent = "Please enter your secret code.";
+        return;
+      }
+ 
+      const g = b[d];
+      if (!g) {
+        e.textContent = "That code is not recognized. Check your code and try again.";
+        return;
+      }
+ 
+      const h = g.name;
+      const i = g.codename;
+      const j = g.giftees;
+ 
+      const k = `
+        <h2>Your assignment</h2>
+        <p>Hello, ${h}. Your Secret Santa codename is:</p>
+        <p><strong style="font-size: 1.2rem; color: #ffd700;">${i}</strong></p>
+        <p>You must prepare <strong>3 gifts</strong> in total, one for each of these colleagues:</p>
+        <ul>
+          ${j.map(l => `<li>${l}</li>`).join("")}
+        </ul>
+        <div class="budget-highlight">
+          <strong>Budget: $20 per gift (max)</strong>
+        </div>
+        <p><strong>For each gift, you must:</strong></p>
+        <ul>
+          <li>Keep the cost to $20 or less per gift.</li>
+          <li>Label the gift with your codename and the giftee's real name.</li>
+          <li>Include one clue pointing toward your real identity.</li>
+        </ul>
+        <p>All gifts should be left in the NeuroICU work room to be picked up.</p>
+        <p>To unmask the Santas, compare clues with anyone else who received gifts from <em>${i}</em> and use your best detective skills.</p>
+      `;
+ 
+      f.innerHTML = k;
+      f.style.display = "block";
+    }
+ 
+    function toggleMusic() {
+      if (bgMusic.paused) {
+        bgMusic.play();
+      } else {
+        bgMusic.pause();
+      }
+    }
+  </script>
+</body>
+</html>
